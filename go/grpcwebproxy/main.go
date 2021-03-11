@@ -38,6 +38,7 @@ var (
 
 	runHttpServer = pflag.Bool("run_http_server", true, "whether to run HTTP server")
 	runTlsServer  = pflag.Bool("run_tls_server", true, "whether to run TLS server")
+	insecure      = pflag.Bool("insecure", false, "whether to ignore all TLS options and serve gRPC as an insecure server")
 
 	useWebsockets         = pflag.Bool("use_websockets", false, "whether to use beta websocket transport layer")
 	websocketPingInterval = pflag.Duration("websocket_ping_interval", 0, "whether to use websocket keepalive pinging. Only used when using websockets. Configured interval must be >= 1s.")
@@ -112,8 +113,10 @@ func main() {
 	if *runTlsServer {
 		// Debug server.
 		servingServer := buildServer(wrappedGrpc)
-		servingListener := buildListenerOrFail("http", *flagHttpTlsPort)
-		servingListener = tls.NewListener(servingListener, buildServerTlsOrFail())
+		servingListener := buildListenerOrFail("http_tls", *flagHttpTlsPort)
+		if !*insecure {
+			servingListener = tls.NewListener(servingListener, buildServerTlsOrFail())
+		}
 		serveServer(servingServer, servingListener, "http_tls", errChan)
 	}
 
